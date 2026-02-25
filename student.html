@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>AttendX — Student Panel</title>
+  <link rel="stylesheet" href="style2.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ─── SPLASH ─── -->
+  <div id="splash" class="splash">
+    <div class="splash-inner">
+      <div class="splash-icon">
+        <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+          <rect width="44" height="44" rx="14" fill="url(#sg)"/>
+          <path d="M22 10C22 10 14 14 14 22C14 30 22 34 22 34C22 34 30 30 30 22C30 14 22 10 22 10Z" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="22" cy="22" r="4" fill="white"/>
+          <defs>
+            <linearGradient id="sg" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#4F46E5"/><stop offset="1" stop-color="#7C3AED"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <h1 class="splash-title">AttendX</h1>
+      <p class="splash-sub">Student Panel</p>
+    </div>
+  </div>
+
+  <!-- ─── APP ROOT ─── -->
+  <div id="app" class="app hidden">
+
+    <!-- ── HEADER ── -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="header-icon">
+          <svg width="22" height="22" viewBox="0 0 44 44" fill="none">
+            <rect width="44" height="44" rx="14" fill="url(#hg)"/>
+            <path d="M22 10C22 10 14 14 14 22C14 30 22 34 22 34C22 34 30 30 30 22C30 14 22 10 22 10Z" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="22" cy="22" r="4" fill="white"/>
+            <defs>
+              <linearGradient id="hg" x1="0" y1="0" x2="44" y2="44">
+                <stop stop-color="#4F46E5"/><stop offset="1" stop-color="#7C3AED"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span class="header-brand">AttendX</span>
+      </div>
+      <div class="header-right">
+        <div id="studentBadge" class="student-badge hidden">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span id="studentBadgeName">—</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ══ REGISTRATION SCREEN ══ -->
+    <section id="registrationView" class="view hidden">
+      <div class="reg-hero">
+        <div class="reg-glyph">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="section-label">FIRST TIME SETUP</div>
+        <h2 class="section-title">Create Profile</h2>
+        <p class="section-sub">Your info is stored only on this device</p>
+      </div>
+
+      <div class="reg-form">
+        <div class="field-group">
+          <label class="field-label" for="inputName">Full Name</label>
+          <div class="field-wrap">
+            <svg class="field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input type="text" id="inputName" class="field-input" placeholder="Enter your full name" autocomplete="name" />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="inputRoll">Roll Number</label>
+          <div class="field-wrap">
+            <svg class="field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M3 9h18M9 21V9"/></svg>
+            <input type="text" id="inputRoll" class="field-input" placeholder="e.g. 2301CS045" autocomplete="off" />
+          </div>
+          <p class="field-hint">This cannot be changed later on this device</p>
+        </div>
+
+        <button class="btn-primary reg-btn" id="registerBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Create Profile
+        </button>
+      </div>
+    </section>
+
+    <!-- ══ DASHBOARD ══ -->
+    <section id="dashboardView" class="view hidden">
+      <div class="dash-hero">
+        <div class="section-label">STUDENT PANEL</div>
+        <h2 class="section-title">Mark Attendance</h2>
+        <p class="section-sub">Select a subject to submit attendance</p>
+      </div>
+
+      <!-- Time restriction banner -->
+      <div id="closedBanner" class="closed-banner hidden">
+        <div class="closed-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <p class="closed-title">Attendance Closed</p>
+        <p class="closed-msg">Attendance is only available<br>9:55 AM – 4:00 PM on weekdays</p>
+      </div>
+
+      <div id="subjectsGrid" class="subjects-grid"></div>
+    </section>
+
+    <!-- ══ ATTENDANCE BOTTOM SHEET ══ -->
+    <div id="sheetOverlay" class="sheet-overlay hidden"></div>
+    <div id="attendSheet" class="subject-sheet" role="dialog" aria-modal="true">
+      <div class="sheet-handle"></div>
+
+      <div class="sheet-header">
+        <div class="sheet-badge" id="sheetBadge">LAB</div>
+        <h3 class="sheet-subject" id="sheetSubjectName">DS (Lab)</h3>
+        <div class="sheet-chips">
+          <div class="info-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span id="sheetDate">—</span>
+          </div>
+          <div class="info-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span id="sheetTime">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 1: Verify lecture exists -->
+      <div id="stepVerify" class="step-panel">
+        <div class="step-loader" id="verifyLoader">
+          <div class="spinner"></div>
+          <p>Checking active lecture…</p>
+        </div>
+        <div id="verifyError" class="step-msg error-msg hidden">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="verifyErrorMsg">No active lecture found</span>
+        </div>
+      </div>
+
+      <!-- Step 2: Code display + manual input + confirm -->
+      <div id="stepCode" class="step-panel hidden">
+
+        <!-- Auto-fetched code display card -->
+        <div class="fetched-code-card">
+          <p class="fetched-code-label">Active Code</p>
+          <div class="fetched-code-value" id="fetchedCodeDisplay">——</div>
+          <div class="fetched-code-meta">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span id="fetchedCodeTime">—</span>
+          </div>
+        </div>
+
+        <!-- Manual code input -->
+        <div class="code-input-wrap">
+          <label class="field-label" style="margin-bottom:8px;display:block;">Code Enter Karo</label>
+          <input type="text" id="codeInput" class="code-input" placeholder="e.g. DS4821LB" maxlength="12" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" />
+        </div>
+
+        <button class="btn-primary submit-btn" id="submitBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Submit Attendance
+        </button>
+      </div>
+
+      <!-- Step 3: Success -->
+      <div id="stepSuccess" class="step-panel hidden">
+        <div class="success-anim">
+          <!-- Animated SVG circle + checkmark -->
+          <svg class="success-svg" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle class="success-circle" cx="40" cy="40" r="34" stroke="url(#sg)" stroke-width="3" stroke-linecap="round"/>
+            <polyline class="success-tick" points="24,40 35,51 56,29" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <defs>
+              <linearGradient id="sg" x1="0" y1="0" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#4F46E5"/>
+                <stop offset="1" stop-color="#10B981"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <!-- Particle dots -->
+          <div class="success-particles">
+            <span></span><span></span><span></span>
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+        <p class="success-title">Attendance Marked!</p>
+        <p class="success-sub" id="successSubText">Your attendance has been recorded</p>
+      </div>
+
+      <button class="btn-ghost sheet-close-btn" id="closeSheetBtn">Cancel</button>
+    </div>
+
+    <!-- ─── TOAST ─── -->
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  </div><!-- /app -->
+
+  <script src="app2.js"></script>
+</body>
+</html>
