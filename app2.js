@@ -15,7 +15,7 @@
 // ─────────────────────────────────────────
 // CONFIG  ← Replace with your deployed URL
 // ─────────────────────────────────────────
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxl5ot4x4C9lsM2JtqEeh60A2vKOo8JAKUtynxOHb69ZlGwm-blBbp9cotEmNYP1silGg/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1A9gEtOshDPcTOhsCCsle4qvD-PHLi7TC9pOuh0RutJHMbQcl7Sm8DtYBZhSxDdEU_g/exec';
 // Attendance window: 09:55 – 16:00 (24h)
 const WINDOW_START_H = 9, WINDOW_START_M = 55;
 const WINDOW_END_H = 16, WINDOW_END_M = 0;
