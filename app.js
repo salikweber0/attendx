@@ -14,7 +14,7 @@
  * ⚠️ Replace this with your deployed Google Apps Script Web App URL.
  * After deploying Apps Script, paste the URL here.
  */
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxl5ot4x4C9lsM2JtqEeh60A2vKOo8JAKUtynxOHb69ZlGwm-blBbp9cotEmNYP1silGg/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1A9gEtOshDPcTOhsCCsle4qvD-PHLi7TC9pOuh0RutJHMbQcl7Sm8DtYBZhSxDdEU_g/exec';
 // Subjects list
 const SUBJECTS = [
     { id: 'dhtml_lab', name: 'DHTML (Lab)', shortName: 'DHTML', isLab: true, prefix: 'DH', suffix: 'LB' },
