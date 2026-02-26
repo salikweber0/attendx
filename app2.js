@@ -15,7 +15,7 @@
 // ─────────────────────────────────────────
 // CONFIG  ← Replace with your deployed URL
 // ─────────────────────────────────────────
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1A9gEtOshDPcTOhsCCsle4qvD-PHLi7TC9pOuh0RutJHMbQcl7Sm8DtYBZhSxDdEU_g/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9d3RxMh-46BkLfN8TtS-bnavxzxgIodv_9HuyY6bcWacPScJ96Osu8Y_PDfP17gtWaA/exec';
 // Attendance window: 09:55 – 16:00 (24h)
 const WINDOW_START_H = 9, WINDOW_START_M = 55;
 const WINDOW_END_H = 16, WINDOW_END_M = 0;
@@ -39,7 +39,11 @@ const SUBJECTS = [
 // ─────────────────────────────────────────
 let student = null;
 let activeSubject = null;
-let activeLectureCode = ''; // ← sheet se fetch hoga
+let activeLectureCode = '';      // ← sheet se fetch hoga
+let lectureCreatedTime = '';     // code ki created time (expiry check ke liye)
+let isOnlineMode = false;        // secret online student mode (10s hold se activate)
+// Code expiry: 2 minutes = 120,000 ms
+const CODE_EXPIRY_MS = 2 * 60 * 1000;
 // ─────────────────────────────────────────
 // UTILITIES
 // ─────────────────────────────────────────
@@ -61,7 +65,6 @@ function saveMarkedLocally(subjectName) {
     const key = `attendx_marked_${getTodayISO()}_${subjectName}`;
     localStorage.setItem(key, 'true');
 }
-/** Friendly date: Mon, 24 Feb 2026 */
 function formatDate(iso) {
     const d = new Date(iso + 'T00:00:00');
     return d.toLocaleDateString('en-IN', {
@@ -229,6 +232,50 @@ function checkTimeRestriction() {
 // ─────────────────────────────────────────
 // SUBJECT GRID
 // ─────────────────────────────────────────
+
+/**
+ * Online Student Secret Feature:
+ * 10 second tak card ko hold karo → Online Mode activate hoga
+ * Online mode mein code kabhi expire nahi hoga
+ * Yeh feature sirf online students ke liye hai — kisi ko batana nahi!
+ */
+function setupHoldToActivateOnline(card, subject) {
+    let holdTimer = null;
+    const HOLD_MS = 10000; // 10 seconds
+
+    function startHold(e) {
+        if (isAlreadyMarkedLocally(subject.name)) return;
+        if (!isAttendanceOpen()) return;
+
+        holdTimer = setTimeout(() => {
+            // Activate online mode — silently, no animation, no visual indicator
+            isOnlineMode = true;
+            if (navigator.vibrate) navigator.vibrate(80); // subtle single vibrate only
+            if (isAlreadyMarkedLocally(subject.name)) {
+                showToast(`✅ ${subject.name} ki attendance aaj already fill ho chuki hai!`, 'success', 4000);
+                isOnlineMode = false;
+                return;
+            }
+            openAttendanceSheet(subject);
+        }, HOLD_MS);
+    }
+
+    function cancelHold() {
+        if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+    }
+
+    // Touch events (mobile)
+    card.addEventListener('touchstart', startHold, { passive: true });
+    card.addEventListener('touchend', cancelHold);
+    card.addEventListener('touchcancel', cancelHold);
+    card.addEventListener('touchmove', cancelHold, { passive: true });
+
+    // Mouse events (desktop testing ke liye)
+    card.addEventListener('mousedown', startHold);
+    card.addEventListener('mouseup', cancelHold);
+    card.addEventListener('mouseleave', cancelHold);
+}
+
 function renderSubjectGrid() {
     const grid = $('subjectsGrid');
     grid.innerHTML = '';
@@ -264,6 +311,8 @@ function renderSubjectGrid() {
             if (e.key === 'Enter' || e.key === ' ')
                 onSubjectSelect(subject);
         });
+        // ── Online Mode: 10-second hold secret feature ──
+        setupHoldToActivateOnline(card, subject);
         grid.appendChild(card);
     });
 }
@@ -280,6 +329,12 @@ function onSubjectSelect(subject) {
         showToast(`✅ ${subject.name} ki attendance aaj already fill ho chuki hai!`, 'success', 4000);
         return;
     }
+    // Reset online mode for normal click — offline student flow
+    isOnlineMode = false;
+    openAttendanceSheet(subject);
+}
+
+function openAttendanceSheet(subject) {
     activeSubject = subject;
     // Populate header
     const badge = $('sheetBadge');
@@ -306,6 +361,42 @@ function showStep(id) {
     });
 }
 // ─────────────────────────────────────────
+// CODE EXPIRY HELPERS
+// ─────────────────────────────────────────
+/**
+ * createdTime "HH:MM" ko aaj ki Date object mein convert karo
+ * e.g. "10:30" → today at 10:30:00
+ */
+function parseCreatedTimeToDate(timeStr) {
+    if (!timeStr) return null;
+    // "10:30 AM", "10:30", "10:30:00" sab handle karo
+    const match = timeStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i);
+    if (!match) return null;
+    let h = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10);
+    const ampm = match[4];
+    if (ampm) {
+        if (ampm.toUpperCase() === 'PM' && h !== 12) h += 12;
+        if (ampm.toUpperCase() === 'AM' && h === 12) h = 0;
+    }
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return d;
+}
+
+/**
+ * Returns true if code is still within 1-minute expiry window
+ * Always returns true for online mode students
+ */
+function isCodeStillValid(createdTimeStr) {
+    if (isOnlineMode) return true; // online students ke liye no expiry
+    const created = parseCreatedTimeToDate(createdTimeStr);
+    if (!created) return true; // parse nahi hua toh assume valid
+    const nowMs = Date.now();
+    return (nowMs - created.getTime()) <= CODE_EXPIRY_MS;
+}
+
+// ─────────────────────────────────────────
 // STEP 1 — Fetch active lecture + display code
 // ─────────────────────────────────────────
 async function checkActiveLecture(subject) {
@@ -324,14 +415,28 @@ async function checkActiveLecture(subject) {
         }
         // Get the LATEST record (last entry = most recent code)
         const latest = data.records[data.records.length - 1];
+        lectureCreatedTime = latest.createdTime || '';
+
+        // ⏱ Client-side expiry check (offline students ke liye)
+        if (!isOnlineMode && !isCodeStillValid(lectureCreatedTime)) {
+            showVerifyError('Code expire ho gaya (1 minute ho gayi). Teacher se dobara start karwao.');
+            return;
+        }
+
         activeLectureCode = latest.code.trim().toUpperCase();
         // Display fetched code on screen
         $('fetchedCodeDisplay').textContent = activeLectureCode;
-        // Show clean time — createdTime is already "HH:MM AM" from teacher panel
-        const timeLabel = latest.createdTime && latest.createdTime.length < 20
-            ? `Started at ${latest.createdTime}`
+        // Show clean time — createdTime is already "HH:MM" from teacher panel
+        const timeLabel = lectureCreatedTime && lectureCreatedTime.length < 20
+            ? `Started at ${lectureCreatedTime}`
             : 'Active lecture';
-        $('fetchedCodeTime').textContent = timeLabel;
+
+        // Online mode indicator
+        if (isOnlineMode) {
+            $('fetchedCodeTime').innerHTML = `<span style="color:#10B981;font-weight:600;">🌐 Online Mode — No Expiry</span>`;
+        } else {
+            $('fetchedCodeTime').textContent = timeLabel;
+        }
         // Move to step 2 — code display + confirm button
         showStep('stepCode');
     }
@@ -386,6 +491,7 @@ async function handleSubmit() {
             lectureCode: activeLectureCode,
             studentName: student.fullName,
             rollNo: student.rollNo,
+            isOnlineMode: isOnlineMode, // ← server-side expiry bypass for online students
         },
     };
     try {
@@ -458,6 +564,85 @@ function bindEvents() {
     setupSwipeToClose();
     // Re-check time restriction every 60s
     setInterval(checkTimeRestriction, 60000);
+    // Anti-copy: code display pe copy/select block karo
+    setupAntiCopy();
+}
+// ─────────────────────────────────────────
+// ANTI-COPY — Code display se copy/select block
+// ─────────────────────────────────────────
+function showDontBeSmartMsg() {
+    // Agar already dikh raha hai toh dobara mat dikhao
+    if (document.getElementById('dontBeSmartMsg')) return;
+    const msg = document.createElement('div');
+    msg.id = 'dontBeSmartMsg';
+    msg.textContent = "Don't be Smart 😏";
+    msg.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.7);
+        background: rgba(15,15,30,0.96);
+        color: #fff;
+        font-family: 'Syne', sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        padding: 18px 32px;
+        border-radius: 16px;
+        border: 1.5px solid rgba(124,58,237,0.5);
+        box-shadow: 0 8px 40px rgba(79,70,229,0.35);
+        z-index: 99999;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        white-space: nowrap;
+        letter-spacing: 0.3px;
+    `;
+    document.body.appendChild(msg);
+    // Animate in
+    requestAnimationFrame(() => {
+        msg.style.opacity = '1';
+        msg.style.transform = 'translate(-50%, -50%) scale(1)';
+    });
+    // Auto remove after 1.8s
+    setTimeout(() => {
+        msg.style.opacity = '0';
+        msg.style.transform = 'translate(-50%, -50%) scale(0.85)';
+        setTimeout(() => msg.remove(), 250);
+    }, 1800);
+}
+function setupAntiCopy() {
+    const codeDisplay = $('fetchedCodeDisplay');
+    if (!codeDisplay) return;
+    // Block right-click context menu
+    codeDisplay.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        showDontBeSmartMsg();
+    });
+    // Block text selection on touchstart (long press se select hota hai)
+    codeDisplay.addEventListener('touchstart', (e) => {
+        // Long press detect — 600ms ke baad message show karo
+        const timer = setTimeout(() => showDontBeSmartMsg(), 600);
+        codeDisplay.addEventListener('touchend', () => clearTimeout(timer), { once: true });
+        codeDisplay.addEventListener('touchcancel', () => clearTimeout(timer), { once: true });
+    }, { passive: true });
+    // Block selectstart event
+    codeDisplay.addEventListener('selectstart', (e) => {
+        e.preventDefault();
+        showDontBeSmartMsg();
+    });
+    // Block copy keyboard shortcut (Ctrl+C / Cmd+C) anywhere on the sheet
+    document.addEventListener('keydown', (e) => {
+        const sheet = $('attendSheet');
+        if (!sheet || !sheet.classList.contains('open')) return;
+        if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+            // Only block if something in code display area is selected
+            const sel = window.getSelection();
+            if (sel && sel.toString().length > 0) {
+                e.preventDefault();
+                showDontBeSmartMsg();
+            }
+        }
+    });
 }
 // ─────────────────────────────────────────
 // INIT
