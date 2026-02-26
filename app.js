@@ -1,4 +1,120 @@
 "use strict";
+
+// ─────────────────────────────────────────
+// SOUND SYSTEM — Teacher Panel
+// ─────────────────────────────────────────
+const SFX = (() => {
+    let ctx = null;
+    function getCtx() {
+        if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+        return ctx;
+    }
+    function resume() {
+        const c = getCtx();
+        if (c.state === 'suspended') c.resume();
+        return c;
+    }
+
+    // Helper: play an oscillator note
+    function note(freq, type, startTime, duration, gainVal, ac) {
+        const osc = ac.createOscillator();
+        const g = ac.createGain();
+        osc.connect(g); g.connect(ac.destination);
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, startTime);
+        g.gain.setValueAtTime(gainVal, startTime);
+        g.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        osc.start(startTime);
+        osc.stop(startTime + duration + 0.01);
+    }
+
+    const sounds = {
+        // 1. Splash welcome — rich ascending chime (teacher authority tone)
+        welcome() {
+            const ac = resume();
+            const t = ac.currentTime;
+            note(330, 'sine', t, 0.3, 0.18, ac);
+            note(440, 'sine', t + 0.12, 0.3, 0.18, ac);
+            note(550, 'sine', t + 0.24, 0.35, 0.2, ac);
+            note(660, 'sine', t + 0.36, 0.5, 0.22, ac);
+            note(880, 'sine', t + 0.52, 0.6, 0.18, ac);
+        },
+        // 2. Subject card tap — crisp select pop
+        cardTap() {
+            const ac = resume();
+            const t = ac.currentTime;
+            note(800, 'sine', t, 0.08, 0.12, ac);
+            note(1000, 'sine', t + 0.05, 0.12, 0.1, ac);
+        },
+        // 3. Sheet open — smooth upward whoosh
+        sheetOpen() {
+            const ac = resume();
+            const t = ac.currentTime;
+            const osc = ac.createOscillator();
+            const g = ac.createGain();
+            osc.connect(g); g.connect(ac.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(200, t);
+            osc.frequency.exponentialRampToValueAtTime(600, t + 0.22);
+            g.gain.setValueAtTime(0.13, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+            osc.start(t); osc.stop(t + 0.28);
+        },
+        // 4. Sheet close / cancel — downward whoosh
+        sheetClose() {
+            const ac = resume();
+            const t = ac.currentTime;
+            const osc = ac.createOscillator();
+            const g = ac.createGain();
+            osc.connect(g); g.connect(ac.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(500, t);
+            osc.frequency.exponentialRampToValueAtTime(180, t + 0.2);
+            g.gain.setValueAtTime(0.1, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+            osc.start(t); osc.stop(t + 0.25);
+        },
+        // 5. Code refresh — quick double blip
+        codeRefresh() {
+            const ac = resume();
+            const t = ac.currentTime;
+            note(900, 'square', t, 0.06, 0.07, ac);
+            note(1200, 'square', t + 0.09, 0.08, 0.07, ac);
+        },
+        // 6. Start attendance — triumphant success fanfare
+        startAttendance() {
+            const ac = resume();
+            const t = ac.currentTime;
+            note(523, 'sine', t, 0.18, 0.2, ac);
+            note(659, 'sine', t + 0.14, 0.18, 0.2, ac);
+            note(784, 'sine', t + 0.28, 0.25, 0.22, ac);
+            note(1047, 'sine', t + 0.42, 0.55, 0.2, ac);
+        },
+        // 7. Check attendance btn — info ping
+        checkAttendance() {
+            const ac = resume();
+            const t = ac.currentTime;
+            note(660, 'sine', t, 0.14, 0.13, ac);
+            note(880, 'sine', t + 0.1, 0.18, 0.12, ac);
+        },
+        // 8. Fetch records — data scan sweep
+        fetchRecords() {
+            const ac = resume();
+            const t = ac.currentTime;
+            const osc = ac.createOscillator();
+            const g = ac.createGain();
+            osc.connect(g); g.connect(ac.destination);
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(300, t);
+            osc.frequency.linearRampToValueAtTime(900, t + 0.3);
+            g.gain.setValueAtTime(0.08, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+            osc.start(t); osc.stop(t + 0.35);
+        },
+    };
+    return sounds;
+})();
+
 /**
  * AttendX — Teacher Panel
  * TypeScript Source (app.ts)
@@ -14,7 +130,7 @@
  * ⚠️ Replace this with your deployed Google Apps Script Web App URL.
  * After deploying Apps Script, paste the URL here.
  */
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1A9gEtOshDPcTOhsCCsle4qvD-PHLi7TC9pOuh0RutJHMbQcl7Sm8DtYBZhSxDdEU_g/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9d3RxMh-46BkLfN8TtS-bnavxzxgIodv_9HuyY6bcWacPScJ96Osu8Y_PDfP17gtWaA/exec';
 // Subjects list
 const SUBJECTS = [
     { id: 'dhtml_lab', name: 'DHTML (Lab)', shortName: 'DHTML', isLab: true, prefix: 'DH', suffix: 'LB' },
@@ -88,6 +204,7 @@ function showToast(message, opts = {}) {
 // SHEET MANAGEMENT
 // ─────────────────────────────────────────
 function openSheet(overlayId, sheetId) {
+    SFX.sheetOpen();
     const overlay = $(overlayId);
     const sheet = $(sheetId);
     overlay.classList.remove('hidden');
@@ -99,6 +216,7 @@ function openSheet(overlayId, sheetId) {
     document.body.style.overflow = 'hidden';
 }
 function closeSheet(overlayId, sheetId) {
+    SFX.sheetClose();
     const overlay = $(overlayId);
     const sheet = $(sheetId);
     overlay.classList.remove('visible');
@@ -147,6 +265,7 @@ function renderSubjectCards() {
 // SUBJECT SELECTION
 // ─────────────────────────────────────────
 function selectSubject(subject) {
+    SFX.cardTap();
     activeSubject = subject;
     currentCode = generateCode(subject);
     // Populate sheet
@@ -166,6 +285,7 @@ function selectSubject(subject) {
 function refreshCode() {
     if (!activeSubject)
         return;
+    SFX.codeRefresh();
     const codeEl = $('codeValue');
     codeEl.classList.add('refreshing');
     setTimeout(() => {
@@ -182,6 +302,7 @@ function refreshCode() {
 async function startAttendance() {
     if (!activeSubject)
         return;
+    SFX.startAttendance();
     const btn = $('startAttendanceBtn');
     btn.disabled = true;
     btn.innerHTML = `
@@ -232,6 +353,7 @@ async function startAttendance() {
 function openCheckAttendance() {
     if (!activeSubject)
         return;
+    SFX.checkAttendance();
     // Pre-fill date
     const picker = $('datePicker');
     picker.value = getTodayISO();
@@ -245,6 +367,7 @@ function openCheckAttendance() {
 async function fetchAttendance() {
     if (!activeSubject)
         return;
+    SFX.fetchRecords();
     const picker = $('datePicker');
     const selectedDate = picker.value;
     if (!selectedDate) {
@@ -316,6 +439,8 @@ function updateHeaderDate() {
 function initSplash() {
     const splash = $('splash');
     const app = $('app');
+    // Welcome sound on splash
+    setTimeout(() => SFX.welcome(), 200);
     setTimeout(() => {
         splash.classList.add('fade-out');
         app.classList.remove('hidden');
