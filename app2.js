@@ -1,4 +1,114 @@
 "use strict";
+
+// ─────────────────────────────────────────
+// SOUND SYSTEM — Student Panel
+// ─────────────────────────────────────────
+const SFX = (() => {
+    let ctx = null;
+    function getCtx() {
+        if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+        return ctx;
+    }
+    function resume() {
+        const c = getCtx();
+        if (c.state === 'suspended') c.resume();
+        return c;
+    }
+    function note(freq, type, startTime, duration, gainVal, ac) {
+        const osc = ac.createOscillator();
+        const g = ac.createGain();
+        osc.connect(g); g.connect(ac.destination);
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, startTime);
+        g.gain.setValueAtTime(gainVal, startTime);
+        g.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        osc.start(startTime);
+        osc.stop(startTime + duration + 0.01);
+    }
+
+    const sounds = {
+        // 1. Splash welcome — warm student greeting melody
+        welcome() {
+            const ac = resume();
+            const t = ac.currentTime;
+            note(392, 'sine', t, 0.2, 0.15, ac);
+            note(523, 'sine', t + 0.15, 0.2, 0.17, ac);
+            note(659, 'sine', t + 0.30, 0.2, 0.17, ac);
+            note(784, 'sine', t + 0.45, 0.4, 0.2, ac);
+        },
+        // 2. Register / create profile — satisfying confirm pop
+        register() {
+            const ac = resume();
+            const t = ac.currentTime;
+            note(600, 'sine', t, 0.1, 0.15, ac);
+            note(900, 'sine', t + 0.08, 0.15, 0.15, ac);
+            note(1200, 'sine', t + 0.18, 0.25, 0.18, ac);
+        },
+        // 3. Subject card select — soft tap click
+        cardTap() {
+            const ac = resume();
+            const t = ac.currentTime;
+            note(750, 'sine', t, 0.07, 0.11, ac);
+            note(950, 'sine', t + 0.04, 0.1, 0.09, ac);
+        },
+        // 4. Sheet slide up — upward swoosh
+        sheetOpen() {
+            const ac = resume();
+            const t = ac.currentTime;
+            const osc = ac.createOscillator();
+            const g = ac.createGain();
+            osc.connect(g); g.connect(ac.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(250, t);
+            osc.frequency.exponentialRampToValueAtTime(700, t + 0.2);
+            g.gain.setValueAtTime(0.12, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+            osc.start(t); osc.stop(t + 0.25);
+        },
+        // 5. Sheet close / cancel — gentle down swipe
+        sheetClose() {
+            const ac = resume();
+            const t = ac.currentTime;
+            const osc = ac.createOscillator();
+            const g = ac.createGain();
+            osc.connect(g); g.connect(ac.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(480, t);
+            osc.frequency.exponentialRampToValueAtTime(200, t + 0.18);
+            g.gain.setValueAtTime(0.09, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+            osc.start(t); osc.stop(t + 0.22);
+        },
+        // 6. Submit attendance — determined send sound
+        submit() {
+            const ac = resume();
+            const t = ac.currentTime;
+            note(500, 'sine', t, 0.1, 0.14, ac);
+            note(700, 'sine', t + 0.08, 0.12, 0.14, ac);
+            note(900, 'sine', t + 0.18, 0.2, 0.15, ac);
+        },
+        // 7. Attendance success — mini celebration jingle
+        success() {
+            const ac = resume();
+            const t = ac.currentTime;
+            note(523, 'sine', t, 0.15, 0.18, ac);
+            note(659, 'sine', t + 0.12, 0.15, 0.18, ac);
+            note(784, 'sine', t + 0.24, 0.15, 0.18, ac);
+            note(1047, 'sine', t + 0.36, 0.5, 0.22, ac);
+            // Sparkle
+            note(1319, 'sine', t + 0.55, 0.3, 0.12, ac);
+        },
+        // 8. Error (wrong code etc.) — gentle descending buzz
+        error() {
+            const ac = resume();
+            const t = ac.currentTime;
+            note(350, 'sawtooth', t, 0.1, 0.1, ac);
+            note(280, 'sawtooth', t + 0.1, 0.15, 0.1, ac);
+        },
+    };
+    return sounds;
+})();
+
 /**
  * AttendX — Student Panel
  * TypeScript Source (app.ts)
@@ -111,6 +221,7 @@ function showToast(msg, type = 'default', duration = 3200) {
 // BOTTOM SHEET
 // ─────────────────────────────────────────
 function openSheet() {
+    SFX.sheetOpen();
     const overlay = $('sheetOverlay');
     const sheet = $('attendSheet');
     overlay.classList.remove('hidden');
@@ -121,6 +232,7 @@ function openSheet() {
     document.body.style.overflow = 'hidden';
 }
 function closeSheet() {
+    SFX.sheetClose();
     const overlay = $('sheetOverlay');
     const sheet = $('attendSheet');
     overlay.classList.remove('visible');
@@ -173,20 +285,24 @@ function handleRegister() {
     const fullName = nameInput.value.trim();
     const rollNo = rollInput.value.trim().toUpperCase();
     if (!fullName) {
+        SFX.error();
         showToast('Please enter your full name', 'error');
         nameInput.focus();
         return;
     }
     if (!rollNo) {
+        SFX.error();
         showToast('Please enter your roll number', 'error');
         rollInput.focus();
         return;
     }
     if (rollNo.length < 4) {
+        SFX.error();
         showToast('Roll number seems too short', 'error');
         rollInput.focus();
         return;
     }
+    SFX.register();
     const profile = { fullName, rollNo };
     saveStudent(profile);
     student = profile;
@@ -321,14 +437,17 @@ function renderSubjectGrid() {
 // ─────────────────────────────────────────
 function onSubjectSelect(subject) {
     if (!isAttendanceOpen()) {
+        SFX.error();
         showToast('Attendance closed. Open 9:55 AM – 4:00 PM', 'warning');
         return;
     }
     // Local flag check — already marked today?
     if (isAlreadyMarkedLocally(subject.name)) {
+        SFX.cardTap();
         showToast(`✅ ${subject.name} ki attendance aaj already fill ho chuki hai!`, 'success', 4000);
         return;
     }
+    SFX.cardTap();
     // Reset online mode for normal click — offline student flow
     isOnlineMode = false;
     openAttendanceSheet(subject);
@@ -459,12 +578,14 @@ async function handleSubmit() {
     const enteredCode = codeEl.value.trim().toUpperCase();
     // Empty check
     if (!enteredCode) {
+        SFX.error();
         showToast('Pehle attendance code daalo', 'error');
         codeEl.focus();
         return;
     }
     // ✅ Validate: entered code must match fetched code
     if (enteredCode !== activeLectureCode) {
+        SFX.error();
         showToast('❌ Code galat hai! Teacher se sahi code lo.', 'error', 4000);
         codeEl.classList.add('input-error');
         setTimeout(() => codeEl.classList.remove('input-error'), 1500);
@@ -472,6 +593,7 @@ async function handleSubmit() {
     }
     // Re-check time restriction
     if (!isAttendanceOpen()) {
+        SFX.error();
         showToast('Attendance band ho gayi hai.', 'warning');
         closeSheet();
         checkTimeRestriction();
@@ -479,6 +601,7 @@ async function handleSubmit() {
     }
     const btn = $('submitBtn');
     btn.disabled = true;
+    SFX.submit();
     btn.innerHTML = `
     <div class="spinner spinner-sm"></div>
     Submitting…
@@ -502,6 +625,7 @@ async function handleSubmit() {
             mode: 'no-cors',
         });
         showStep('stepSuccess');
+        SFX.success();
         // Save flag in localStorage so duplicate attempt shows toast
         saveMarkedLocally(activeSubject.name);
         $('successSubText').textContent =
@@ -531,6 +655,7 @@ async function handleSubmit() {
 function initSplash() {
     const splash = $('splash');
     const app = $('app');
+    setTimeout(() => SFX.welcome(), 200);
     setTimeout(() => {
         splash.classList.add('fade-out');
         app.classList.remove('hidden');
