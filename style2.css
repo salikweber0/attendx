@@ -561,6 +561,10 @@ body::after {
   overflow-wrap: break-word;
   white-space: normal;
   animation: codeReveal 0.5s 0.1s var(--t-spring) both;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  pointer-events: none;
 }
 
 @keyframes codeReveal {
@@ -822,3 +826,44 @@ body::after {
   border-color: rgba(245,158,11,0.3);
   color: #FCD34D;
 }
+/* ─────────────────────────────────────────
+   ONLINE MODE — Hold Progress Ring
+   ───────────────────────────────────────── */
+.hold-progress {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10,10,20,0.82);
+  border-radius: inherit;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+.hold-progress svg {
+  width: 48px; height: 48px;
+  transform: rotate(-90deg);
+}
+.hp-bg {
+  fill: none;
+  stroke: rgba(255,255,255,0.1);
+  stroke-width: 3;
+}
+.hp-fill {
+  fill: none;
+  stroke: url(#holdGrad);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.05s linear;
+}
+.hp-text {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #a5b4fc;
+  letter-spacing: 0.5px;
+}
+/* Make subject-card position:relative so progress overlay works */
+.subject-card { position: relative; overflow: hidden; user-select: none; -webkit-user-select: none; }
