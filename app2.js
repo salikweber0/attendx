@@ -105,6 +105,14 @@ const SFX = (() => {
             note(350, 'sawtooth', t, 0.1, 0.1, ac);
             note(280, 'sawtooth', t + 0.1, 0.15, 0.1, ac);
         },
+        // 9. No internet — harsh warning buzz
+        noInternet() {
+            const ac = resume();
+            const t = ac.currentTime;
+            note(200, 'sawtooth', t, 0.12, 0.18, ac);
+            note(160, 'sawtooth', t + 0.13, 0.12, 0.18, ac);
+            note(120, 'sawtooth', t + 0.26, 0.2, 0.2, ac);
+        },
     };
     return sounds;
 })();
@@ -572,9 +580,53 @@ function showVerifyError(msg) {
 // ─────────────────────────────────────────
 // STEP 2 — Student types code → validate → submit
 // ─────────────────────────────────────────
+function showNoInternetMsg() {
+    if (document.getElementById('noInternetMsg')) return;
+    const msg = document.createElement('div');
+    msg.id = 'noInternetMsg';
+    msg.textContent = '📵 Please turn on Internet';
+    msg.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.7);
+        background: rgba(220,38,38,0.97);
+        color: #fff;
+        font-family: 'Syne', sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        padding: 18px 32px;
+        border-radius: 16px;
+        border: 1.5px solid rgba(255,100,100,0.5);
+        box-shadow: 0 8px 40px rgba(220,38,38,0.4);
+        z-index: 99999;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        white-space: nowrap;
+        text-align: center;
+    `;
+    document.body.appendChild(msg);
+    requestAnimationFrame(() => {
+        msg.style.opacity = '1';
+        msg.style.transform = 'translate(-50%, -50%) scale(1)';
+    });
+    setTimeout(() => {
+        msg.style.opacity = '0';
+        msg.style.transform = 'translate(-50%, -50%) scale(0.85)';
+        setTimeout(() => msg.remove(), 250);
+    }, 3000);
+}
+
 async function handleSubmit() {
     if (!activeSubject || !student)
         return;
+    // ── Internet Check ──
+    if (!navigator.onLine) {
+        SFX.noInternet();
+        showNoInternetMsg();
+        return;
+    }
     const codeEl = document.getElementById('codeInput');
     const enteredCode = codeEl.value.trim().toUpperCase();
     // Empty check
