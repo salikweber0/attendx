@@ -97,7 +97,15 @@ const SFX = (() => {
             note(660, 'sine', t, 0.14, 0.13, ac);
             note(880, 'sine', t + 0.1, 0.18, 0.12, ac);
         },
-        // 8. Fetch records — data scan sweep
+        // 8. No internet — harsh warning buzz
+        noInternet() {
+            const ac = resume();
+            const t = ac.currentTime;
+            note(200, 'sawtooth', t, 0.12, 0.18, ac);
+            note(160, 'sawtooth', t + 0.13, 0.12, 0.18, ac);
+            note(120, 'sawtooth', t + 0.26, 0.2, 0.2, ac);
+        },
+        // 9. Fetch records — data scan sweep
         fetchRecords() {
             const ac = resume();
             const t = ac.currentTime;
@@ -299,9 +307,54 @@ function refreshCode() {
 // ─────────────────────────────────────────
 // START ATTENDANCE → Google Sheets
 // ─────────────────────────────────────────
+function showNoInternetMsg() {
+    // Agar already dikh raha hai toh skip
+    if (document.getElementById('noInternetMsg')) return;
+    const msg = document.createElement('div');
+    msg.id = 'noInternetMsg';
+    msg.textContent = '📵 Please turn on Internet';
+    msg.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.7);
+        background: rgba(220,38,38,0.97);
+        color: #fff;
+        font-family: 'Syne', sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        padding: 18px 32px;
+        border-radius: 16px;
+        border: 1.5px solid rgba(255,100,100,0.5);
+        box-shadow: 0 8px 40px rgba(220,38,38,0.4);
+        z-index: 99999;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        white-space: nowrap;
+        text-align: center;
+    `;
+    document.body.appendChild(msg);
+    requestAnimationFrame(() => {
+        msg.style.opacity = '1';
+        msg.style.transform = 'translate(-50%, -50%) scale(1)';
+    });
+    setTimeout(() => {
+        msg.style.opacity = '0';
+        msg.style.transform = 'translate(-50%, -50%) scale(0.85)';
+        setTimeout(() => msg.remove(), 250);
+    }, 3000);
+}
+
 async function startAttendance() {
     if (!activeSubject)
         return;
+    // ── Internet Check ──
+    if (!navigator.onLine) {
+        SFX.noInternet();
+        showNoInternetMsg();
+        return;
+    }
     SFX.startAttendance();
     const btn = $('startAttendanceBtn');
     btn.disabled = true;
