@@ -808,23 +808,36 @@ function showDontBeSmartMsg() {
 function setupAntiCopy() {
     const codeDisplay = $('fetchedCodeDisplay');
     if (!codeDisplay) return;
-    // Block right-click context menu
-    codeDisplay.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        showDontBeSmartMsg();
-    });
-    // Block text selection on touchstart (long press se select hota hai)
-    codeDisplay.addEventListener('touchstart', (e) => {
-        // Long press detect — 600ms ke baad message show karo
-        const timer = setTimeout(() => showDontBeSmartMsg(), 600);
-        codeDisplay.addEventListener('touchend', () => clearTimeout(timer), { once: true });
-        codeDisplay.addEventListener('touchcancel', () => clearTimeout(timer), { once: true });
-    }, { passive: true });
-    // Block selectstart event
-    codeDisplay.addEventListener('selectstart', (e) => {
-        e.preventDefault();
-        showDontBeSmartMsg();
-    });
+
+    // Poora fetched-code-card bhi protect karo (hold se bhi)
+    const codeCard = codeDisplay.closest('.fetched-code-card') || codeDisplay.parentElement;
+
+    // Helper: kisi bhi element pe hold protection lagao
+    function addHoldProtection(el) {
+        if (!el) return;
+        // Block right-click context menu
+        el.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            showDontBeSmartMsg();
+        });
+        // Long press (hold) detect — 500ms ke baad message show karo
+        el.addEventListener('touchstart', (e) => {
+            const timer = setTimeout(() => showDontBeSmartMsg(), 500);
+            el.addEventListener('touchend', () => clearTimeout(timer), { once: true });
+            el.addEventListener('touchcancel', () => clearTimeout(timer), { once: true });
+            el.addEventListener('touchmove', () => clearTimeout(timer), { once: true, passive: true });
+        }, { passive: true });
+        // Block selectstart event
+        el.addEventListener('selectstart', (e) => {
+            e.preventDefault();
+            showDontBeSmartMsg();
+        });
+    }
+
+    // Code display text pe protection
+    addHoldProtection(codeDisplay);
+    // Poore card pe bhi same protection
+    addHoldProtection(codeCard);
     // Block copy keyboard shortcut (Ctrl+C / Cmd+C) anywhere on the sheet
     document.addEventListener('keydown', (e) => {
         const sheet = $('attendSheet');
