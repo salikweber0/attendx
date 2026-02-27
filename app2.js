@@ -125,7 +125,7 @@ const SFX = (() => {
 // ─────────────────────────────────────────
 // CONFIG  ← Replace with your deployed URL
 // ─────────────────────────────────────────
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9d3RxMh-46BkLfN8TtS-bnavxzxgIodv_9HuyY6bcWacPScJ96Osu8Y_PDfP17gtWaA/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziJMDc7KuYqZw076YwcJhmzk7kkf2XN9v57s_zX9wzc-4L2YptfmrxBaXo7XYHQ089ig/exec';
 // Attendance window: 09:55 – 16:00 (24h)
 const WINDOW_START_H = 9, WINDOW_START_M = 55;
 const WINDOW_END_H = 16, WINDOW_END_M = 0;
@@ -153,7 +153,7 @@ let activeLectureCode = '';      // ← sheet se fetch hoga
 let lectureCreatedTime = '';     // code ki created time (expiry check ke liye)
 let isOnlineMode = false;        // secret online student mode (10s hold se activate)
 // Code expiry: 2 minutes = 120,000 ms
-const CODE_EXPIRY_MS = 2 * 60 * 1000;
+const CODE_EXPIRY_MS = 1 * 60 * 1000; // 1 minute expiry
 // ─────────────────────────────────────────
 // UTILITIES
 // ─────────────────────────────────────────
@@ -488,18 +488,19 @@ function showStep(id) {
  */
 function parseCreatedTimeToDate(timeStr) {
     if (!timeStr) return null;
-    // "10:30 AM", "10:30", "10:30:00" sab handle karo
+    // "10:30 AM", "10:30", "10:30:00", "10:30:45 AM" sab handle karo
     const match = timeStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i);
     if (!match) return null;
     let h = parseInt(match[1], 10);
     const m = parseInt(match[2], 10);
+    const s = match[3] ? parseInt(match[3], 10) : 0; // ✅ seconds bhi extract karo
     const ampm = match[4];
     if (ampm) {
         if (ampm.toUpperCase() === 'PM' && h !== 12) h += 12;
         if (ampm.toUpperCase() === 'AM' && h === 12) h = 0;
     }
     const d = new Date();
-    d.setHours(h, m, 0, 0);
+    d.setHours(h, m, s, 0); // ✅ exact second se 60s baad expire hoga
     return d;
 }
 
@@ -618,24 +619,41 @@ async function handleSubmit() {
         },
     };
     try {
-        await fetch(APPS_SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-            mode: 'no-cors',
-        });
-        showStep('stepSuccess');
-        SFX.success();
-        // Save flag in localStorage so duplicate attempt shows toast
-        saveMarkedLocally(activeSubject.name);
-        $('successSubText').textContent =
-            `${activeSubject.name} · ${student.rollNo} · ${getCurrentTime()}`;
-        setTimeout(() => {
+        // Apps Script ke saath CORS issue ki wajah se GET request use karo
+        // POST data ko URL params mein encode karo
+        const url = new URL(APPS_SCRIPT_URL);
+        url.searchParams.set('action', 'markStudentAttendanceGET');
+        url.searchParams.set('date', payload.data.date);
+        url.searchParams.set('subject', payload.data.subject);
+        url.searchParams.set('lectureCode', payload.data.lectureCode);
+        url.searchParams.set('studentName', payload.data.studentName);
+        url.searchParams.set('rollNo', payload.data.rollNo);
+        url.searchParams.set('isOnlineMode', payload.data.isOnlineMode ? 'true' : 'false');
+        const res = await fetch(url.toString());
+        const json = await res.json();
+        if (json.success) {
+            showStep('stepSuccess');
+            SFX.success();
+            saveMarkedLocally(activeSubject.name);
+            $('successSubText').textContent =
+                `${activeSubject.name} · ${student.rollNo} · ${getCurrentTime()}`;
+            setTimeout(() => {
+                closeSheet();
+                renderSubjectGrid();
+            }, 2500);
+        } else if (json.alreadyMarked) {
+            SFX.error();
+            showToast(`✅ ${activeSubject.name} ki attendance aaj already submit ho chuki hai!`, 'success', 4000);
+            saveMarkedLocally(activeSubject.name);
             closeSheet();
-            renderSubjectGrid(); // refresh cards to show filled badge
-        }, 2500);
+            renderSubjectGrid();
+        } else {
+            SFX.error();
+            showToast(`❌ ${json.error || 'Submit nahi hua. Dobara try karo.'}`, 'error', 5000);
+        }
     }
-    catch {
+    catch (err) {
+        console.error('Submit error:', err);
         showToast('⚠ Submit nahi hua. Internet check karo.', 'error');
     }
     finally {
