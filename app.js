@@ -566,25 +566,52 @@ function setupSwipeToClose(sheetId, onClose) {
     const sheet = $(sheetId);
     let startY = 0;
     let startTranslate = 0;
+    let isSwipingSheet = false;
+
     sheet.addEventListener('touchstart', (e) => {
         startY = e.touches[0].clientY;
         startTranslate = 0;
+        isSwipingSheet = false;
+
+        // Check if touch started on a scrollable element that has content to scroll
+        const scrollable = e.target.closest('.results-list, .subject-sheet, .check-sheet');
+        const resultsList = sheet.querySelector('.results-list');
+        if (resultsList && resultsList.scrollTop > 0) {
+            // User is in middle of scrollable content — don't allow sheet dismiss
+            isSwipingSheet = false;
+        } else {
+            isSwipingSheet = true;
+        }
     }, { passive: true });
+
     sheet.addEventListener('touchmove', (e) => {
+        if (!isSwipingSheet) return;
+
         const delta = e.touches[0].clientY - startY;
+
+        // Check if any scrollable child can still scroll down
+        const resultsList = sheet.querySelector('.results-list');
+        if (resultsList && resultsList.scrollTop > 0) {
+            // Content is scrolled — don't hijack for sheet dismissal
+            isSwipingSheet = false;
+            sheet.style.transform = '';
+            return;
+        }
+
         if (delta > 0) {
             startTranslate = delta;
             sheet.style.transform = `translateX(-50%) translateY(${delta}px)`;
         }
     }, { passive: true });
+
     sheet.addEventListener('touchend', () => {
-        if (startTranslate > 100) {
+        if (isSwipingSheet && startTranslate > 100) {
             sheet.style.transform = '';
             onClose();
-        }
-        else {
+        } else {
             sheet.style.transform = '';
         }
+        isSwipingSheet = false;
     });
 }
 // ─────────────────────────────────────────
