@@ -130,7 +130,7 @@ const SFX = (() => {
  * ⚠️ Replace this with your deployed Google Apps Script Web App URL.
  * After deploying Apps Script, paste the URL here.
  */
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9d3RxMh-46BkLfN8TtS-bnavxzxgIodv_9HuyY6bcWacPScJ96Osu8Y_PDfP17gtWaA/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziJMDc7KuYqZw076YwcJhmzk7kkf2XN9v57s_zX9wzc-4L2YptfmrxBaXo7XYHQ089ig/exec';
 // Subjects list
 const SUBJECTS = [
     { id: 'dhtml_lab', name: 'DHTML (Lab)', shortName: 'DHTML', isLab: true, prefix: 'DH', suffix: 'LB' },
@@ -314,7 +314,7 @@ async function startAttendance() {
         date: getTodayISO(),
         subject: activeSubject.name,
         code: currentCode,
-        createdTime: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        createdTime: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     };
     try {
         // POST to Apps Script
@@ -403,6 +403,36 @@ async function fetchAttendance() {
 function renderAttendanceResults(records) {
     const list = $('resultsList');
     list.innerHTML = '';
+    // Add search box if not already present
+    let searchWrap = document.getElementById('rollSearchWrap');
+    if (!searchWrap) {
+        searchWrap = document.createElement('div');
+        searchWrap.id = 'rollSearchWrap';
+        searchWrap.style.cssText = 'margin-bottom:12px;display:flex;gap:8px;';
+        searchWrap.innerHTML = `
+          <input id="rollSearchInput" type="text" placeholder="Roll No. se search karo…" autocomplete="off"
+            style="flex:1;padding:10px 14px;background:var(--c-surface2);border:1.5px solid var(--c-border2);
+            border-radius:12px;color:var(--c-text-1);font-size:14px;font-family:var(--f-body);outline:none;"/>
+          <button id="rollSearchBtn" style="padding:10px 16px;background:var(--c-grad-1);border:none;border-radius:12px;
+            color:white;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Search</button>
+        `;
+        const resultsSection = $('attendanceResults');
+        resultsSection.insertBefore(searchWrap, $('resultsList'));
+        const doSearch = () => {
+            const query = document.getElementById('rollSearchInput').value.trim().toUpperCase();
+            const rows = list.querySelectorAll('.result-row');
+            rows.forEach(row => {
+                const rollText = row.querySelector('.rr-date')?.textContent?.toUpperCase() || '';
+                const nameText = row.querySelector('.rr-subject')?.textContent?.toUpperCase() || '';
+                row.style.display = (!query || rollText.includes(query) || nameText.includes(query)) ? '' : 'none';
+            });
+        };
+        document.getElementById('rollSearchBtn').addEventListener('click', doSearch);
+        document.getElementById('rollSearchInput').addEventListener('input', doSearch);
+        document.getElementById('rollSearchInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') doSearch(); });
+    } else {
+        document.getElementById('rollSearchInput').value = '';
+    }
     records.forEach((rec, i) => {
         const row = document.createElement('div');
         row.className = 'result-row';
