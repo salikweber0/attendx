@@ -867,3 +867,43 @@ body::after {
 }
 /* Make subject-card position:relative so progress overlay works */
 .subject-card { position: relative; overflow: hidden; user-select: none; -webkit-user-select: none; }
+/* ── Font-size responsive fix for large system fonts ── */
+html {
+  font-size: 15px !important;
+}
+* {
+  max-font-size: initial;
+}
+/* Force base font on body so system font scaling doesn't break layout */
+body {
+  font-size: 15px !important;
+}
+/* Limit all text scaling via viewport-based sizes */
+.section-title { font-size: clamp(20px, 5.5vw, 26px); }
+.section-sub { font-size: clamp(12px, 3.5vw, 14px); }
+.card-name { font-size: clamp(13px, 3.8vw, 15px); }
+.card-type { font-size: clamp(10px, 3vw, 12px); }
+.field-input { font-size: clamp(13px, 3.8vw, 15px) !important; }
+.btn-primary { font-size: clamp(13px, 3.8vw, 15px); }
+.sheet-subject { font-size: clamp(18px, 5.5vw, 22px); }
+
+/* ── Fetched code card — prevent overflow ── */
+.fetched-code-card {
+  overflow: hidden;
+}
+.fetched-code-value {
+  font-size: clamp(18px, 6vw, 26px) !important;
+  letter-spacing: clamp(1px, 1.2vw, 3px) !important;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  padding: 0 8px;
+  max-width: 100%;
+  display: block;
+}
+
+/* ── Code input font safe ── */
+.code-input {
+  font-size: clamp(18px, 5.5vw, 22px) !important;
+  letter-spacing: clamp(1px, 1.5vw, 3px) !important;
+}
