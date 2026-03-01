@@ -133,7 +133,7 @@ const SFX = (() => {
 // ─────────────────────────────────────────
 // CONFIG  ← Replace with your deployed URL
 // ─────────────────────────────────────────
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziJMDc7KuYqZw076YwcJhmzk7kkf2XN9v57s_zX9wzc-4L2YptfmrxBaXo7XYHQ089ig/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1tRQ139zqN1Zpdm43WK4P32KCDxV5EWQ9kgA1CRa9T_aLrtNzy_4cdgr63MFS9dt4kg/exec';
 // Attendance window: 09:55 – 16:00 (24h)
 const WINDOW_START_H = 9, WINDOW_START_M = 55;
 const WINDOW_END_H = 16, WINDOW_END_M = 0;
@@ -287,7 +287,7 @@ function loadStudent() {
 function saveStudent(profile) {
     localStorage.setItem(LS_STUDENT_KEY, JSON.stringify(profile));
 }
-function handleRegister() {
+async function handleRegister() {
     const nameInput = $('inputName');
     const rollInput = $('inputRoll');
     const fullName = nameInput.value.trim();
@@ -310,12 +310,150 @@ function handleRegister() {
         rollInput.focus();
         return;
     }
+    // Roll No. range check: sirf 1001–1142 allowed
+    const rollNum = parseInt(rollNo, 10);
+    if (isNaN(rollNum) || rollNum < 1001 || rollNum > 1142) {
+        SFX.error();
+        showDontBeSmartReg();
+        return;
+    }
+
+    // ── Show checking animation ──
+    showRollCheckOverlay(true);
+
+    let checkPassed = false;
+    try {
+        const url = new URL(APPS_SCRIPT_URL);
+        url.searchParams.set('action', 'checkRollStatus');
+        url.searchParams.set('rollNo', rollNo);
+        const res = await fetch(url.toString());
+        const data = await res.json();
+
+        showRollCheckOverlay(false);
+
+        if (data.active === true) {
+            // Roll No already active → block registration
+            SFX.error();
+            showDontBeSmartReg();
+            return;
+        }
+
+        // active nahi hai (blank ya kuch bhi) → allow karo
+        checkPassed = true;
+
+    } catch (err) {
+        // Network error → registration block karo, retry karne bolo
+        showRollCheckOverlay(false);
+        SFX.error();
+        showToast('⚠ Internet error. Check your connection and try again.', 'error', 4000);
+        return;
+    }
+
+    if (!checkPassed) return;
+
+    // ── All good → register immediately, activate in background ──
+    showRollCheckOverlay(false);
+
+    // Fire-and-forget — await nahi karna, no delay
+    const activateUrl = new URL(APPS_SCRIPT_URL);
+    activateUrl.searchParams.set('action', 'activateRoll');
+    activateUrl.searchParams.set('rollNo', rollNo);
+    fetch(activateUrl.toString()).catch(() => {});
+
     SFX.register();
     const profile = { fullName, rollNo };
     saveStudent(profile);
     student = profile;
-    showToast(`Welcome, ${fullName.split(' ')[0]}! 👋`, 'success');
+
+    showToast(`Welcome, ${fullName}! 👋`, 'success');
     setTimeout(() => switchToDashboard(), 500);
+}
+
+/** Show/hide the "Checking…" overlay animation during roll no. verification */
+function showRollCheckOverlay(show) {
+    let overlay = document.getElementById('rollCheckOverlay');
+    if (show) {
+        if (overlay) return;
+        overlay = document.createElement('div');
+        overlay.id = 'rollCheckOverlay';
+        overlay.style.cssText = `
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(10,10,20,0.75);
+            backdrop-filter: blur(8px);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 16px;
+            opacity: 0; transition: opacity 0.2s ease;
+        `;
+        overlay.innerHTML = `
+            <div style="
+                width: 56px; height: 56px;
+                border: 3px solid rgba(124,58,237,0.2);
+                border-top-color: #7C3AED;
+                border-radius: 50%;
+                animation: spin 0.7s linear infinite;
+            "></div>
+            <p style="
+                font-family: 'DM Sans', sans-serif;
+                color: rgba(255,255,255,0.85);
+                font-size: 15px; font-weight: 500;
+                letter-spacing: 0.3px;
+            ">Verifying Roll Number…</p>
+            <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+        `;
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => { overlay.style.opacity = '1'; });
+        // Disable register button while checking
+        const btn = $('registerBtn');
+        if (btn) { btn.disabled = true; }
+    } else {
+        if (overlay) {
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay && overlay.remove(), 220);
+        }
+        const btn = $('registerBtn');
+        if (btn) { btn.disabled = false; }
+    }
+}
+
+/** Show red "Don't be smart" error box — invalid or already active roll no. */
+function showDontBeSmartReg() {
+    const old = document.getElementById('rollExistsError');
+    if (old) old.remove();
+
+    const box = document.createElement('div');
+    box.id = 'rollExistsError';
+    box.style.cssText = `
+        margin: 12px 0 4px 0;
+        padding: 14px 18px;
+        background: rgba(220, 38, 38, 0.5);
+        border: 2px solid #dc2626;
+        border-radius: 12px;
+        text-align: center;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        color: #fff;
+        letter-spacing: 0.2px;
+        opacity: 0;
+        transform: translateY(-6px);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+    `;
+    box.textContent = "Don't be smart 😏";
+
+    const rollGroup = $('inputRoll').closest('.field-group');
+    rollGroup.insertAdjacentElement('afterend', box);
+
+    requestAnimationFrame(() => {
+        box.style.opacity = '1';
+        box.style.transform = 'translateY(0)';
+    });
+
+    setTimeout(() => {
+        box.style.opacity = '0';
+        box.style.transform = 'translateY(-6px)';
+        setTimeout(() => box.remove(), 300);
+    }, 5000);
 }
 // ─────────────────────────────────────────
 // VIEWS
