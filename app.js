@@ -138,7 +138,7 @@ const SFX = (() => {
  * ⚠️ Replace this with your deployed Google Apps Script Web App URL.
  * After deploying Apps Script, paste the URL here.
  */
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziJMDc7KuYqZw076YwcJhmzk7kkf2XN9v57s_zX9wzc-4L2YptfmrxBaXo7XYHQ089ig/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1tRQ139zqN1Zpdm43WK4P32KCDxV5EWQ9kgA1CRa9T_aLrtNzy_4cdgr63MFS9dt4kg/exec';
 // Subjects list
 const SUBJECTS = [
     { id: 'dhtml_lab', name: 'DHTML (Lab)', shortName: 'DHTML', isLab: true, prefix: 'DH', suffix: 'LB' },
