@@ -798,7 +798,9 @@ body::after {
   border-radius: var(--r-full);
   color: var(--c-text-1);
   font-size: 13px; font-weight: 500;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
+  text-align: center;
   box-shadow: 0 8px 30px rgba(0,0,0,0.5);
   opacity: 0; pointer-events: none;
   transition: opacity var(--t-med), transform var(--t-med);
@@ -906,4 +908,100 @@ body {
 .code-input {
   font-size: clamp(18px, 5.5vw, 22px) !important;
   letter-spacing: clamp(1px, 1.5vw, 3px) !important;
+}
+/* ══════════════════════
+   COLLEGE DROPDOWN
+══════════════════════ */
+.field-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.college-search-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(79,70,229,0.15);
+  border: 1px solid rgba(79,70,229,0.3);
+  border-radius: 8px;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  color: #A5B4FC;
+  cursor: pointer;
+  transition: background var(--t-fast), transform var(--t-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+.college-search-btn:active {
+  background: rgba(79,70,229,0.3);
+  transform: translateY(-50%) scale(0.93);
+}
+
+/* Make display input have right padding for button */
+#collegeDisplay {
+  padding-right: 52px !important;
+}
+
+.college-dropdown {
+  background: var(--c-surface2);
+  border: 1px solid var(--c-border2);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  margin-top: -8px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  animation: fadeUp 0.2s ease;
+}
+
+.college-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--c-border);
+  color: var(--c-text-3);
+}
+
+.college-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--c-text-1);
+  font-size: 14px;
+  font-family: var(--f-body);
+  font-weight: 500;
+}
+.college-search-input::placeholder { color: var(--c-text-3); }
+
+.college-list {
+  max-height: 210px;
+  overflow-y: auto;
+}
+
+.college-item {
+  padding: 13px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-text-2);
+  cursor: pointer;
+  border-bottom: 1px solid var(--c-border);
+  transition: background var(--t-fast), color var(--t-fast);
+  line-height: 1.4;
+}
+.college-item:last-child { border-bottom: none; }
+.college-item:active {
+  background: rgba(79,70,229,0.1);
+  color: var(--c-text-1);
+}
+
+.college-not-found {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 16px;
+  color: var(--c-text-3);
+  font-size: 13px;
+  font-weight: 500;
 }
