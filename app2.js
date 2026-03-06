@@ -273,6 +273,138 @@ function setupSwipeToClose() {
     });
 }
 // ─────────────────────────────────────────
+// COLLEGE SYSTEM
+// ─────────────────────────────────────────
+const COLLEGE_LIST = [
+    'MIT — Massachusetts Institute of Technology',
+    'Stanford University',
+    'Harvard University',
+    'University of Oxford',
+    'ETH Zurich — Swiss Federal Institute of Technology',
+];
+const SECRET_COLLEGE_CODE = 'NGCCA';
+let selectedCollege = ''; // '' = nothing selected yet
+
+function initCollegeDropdown() {
+    const searchBtn = $('collegeSearchBtn');
+    const displayInput = $('collegeDisplay');
+    const dropdown = $('collegeDropdown');
+    const searchInput = $('collegeSearchInput');
+
+    function openDropdown() {
+        dropdown.classList.remove('hidden');
+        searchInput.value = '';
+        renderCollegeList('');
+        setTimeout(() => searchInput.focus(), 80);
+    }
+
+    function closeDropdown() {
+        dropdown.classList.add('hidden');
+    }
+
+    // Open on button click or display input click
+    searchBtn.addEventListener('click', (e) => { e.stopPropagation(); openDropdown(); });
+    displayInput.addEventListener('click', () => openDropdown());
+
+    // Live search filter
+    searchInput.addEventListener('input', () => {
+        renderCollegeList(searchInput.value.trim());
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+        if (!$('collegeFieldGroup').contains(e.target) && !dropdown.contains(e.target)) {
+            closeDropdown();
+        }
+    });
+}
+
+function renderCollegeList(query) {
+    const list = $('collegeList');
+    list.innerHTML = '';
+
+    const q = query.toUpperCase().trim();
+
+    // Check if query is the secret code — show not found but save silently
+    if (q === SECRET_COLLEGE_CODE) {
+        // Save secret college silently — show not found msg
+        selectedCollege = SECRET_COLLEGE_CODE;
+        list.innerHTML = `<div class="college-not-found">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span>Not Found</span>
+        </div>`;
+        // Auto-set display as empty (don't reveal)
+        $('collegeDisplay').value = '';
+        return;
+    }
+
+    // Filter from visible list
+    const filtered = q === ''
+        ? COLLEGE_LIST
+        : COLLEGE_LIST.filter(c => c.toUpperCase().includes(q));
+
+    if (filtered.length === 0) {
+        list.innerHTML = `<div class="college-not-found">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span>Not Found</span>
+        </div>`;
+        return;
+    }
+
+    filtered.forEach(college => {
+        const item = document.createElement('div');
+        item.className = 'college-item';
+        item.textContent = college;
+        item.addEventListener('click', () => {
+            selectedCollege = college;
+            $('collegeDisplay').value = college;
+            $('collegeDropdown').classList.add('hidden');
+            // Remove any existing error box
+            const old = document.getElementById('collegeErrorBox');
+            if (old) old.remove();
+        });
+        list.appendChild(item);
+    });
+}
+
+function showCollegeError(msg) {
+    const old = document.getElementById('collegeErrorBox');
+    if (old) old.remove();
+
+    const box = document.createElement('div');
+    box.id = 'collegeErrorBox';
+    box.style.cssText = `
+        margin: 10px 0 4px 0;
+        padding: 13px 16px;
+        background: rgba(220,38,38,0.18);
+        border: 1.5px solid #dc2626;
+        border-radius: 12px;
+        text-align: center;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13px; font-weight: 600;
+        color: #fca5a5;
+        opacity: 0; transform: translateY(-6px);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+    `;
+    box.textContent = msg;
+
+    const collegeGroup = $('collegeFieldGroup');
+    // Insert after dropdown or after the group
+    const dropdown = $('collegeDropdown');
+    dropdown.insertAdjacentElement('afterend', box);
+
+    requestAnimationFrame(() => {
+        box.style.opacity = '1';
+        box.style.transform = 'translateY(0)';
+    });
+    setTimeout(() => {
+        box.style.opacity = '0';
+        box.style.transform = 'translateY(-6px)';
+        setTimeout(() => box.remove(), 300);
+    }, 4000);
+}
+
+// ─────────────────────────────────────────
 // REGISTRATION
 // ─────────────────────────────────────────
 function loadStudent() {
@@ -310,6 +442,20 @@ async function handleRegister() {
         rollInput.focus();
         return;
     }
+
+    // ── College validation ──
+    if (!selectedCollege) {
+        SFX.error();
+        showCollegeError('Please select your college');
+        return;
+    }
+    // Agar secret code nahi hai aur koi visible college select kiya → block
+    if (selectedCollege !== SECRET_COLLEGE_CODE) {
+        SFX.error();
+        showCollegeError('Tum is college ke nahi ho 😏');
+        return;
+    }
+    // Secret college selected — proceed normally
     // Roll No. range check: sirf 1001–1142 allowed
     const rollNum = parseInt(rollNo, 10);
     if (isNaN(rollNum) || rollNum < 1001 || rollNum > 1142) {
@@ -361,7 +507,7 @@ async function handleRegister() {
     fetch(activateUrl.toString()).catch(() => {});
 
     SFX.register();
-    const profile = { fullName, rollNo };
+    const profile = { fullName, rollNo, college: SECRET_COLLEGE_CODE };
     saveStudent(profile);
     student = profile;
 
@@ -874,6 +1020,8 @@ function initSplash() {
 // EVENT LISTENERS
 // ─────────────────────────────────────────
 function bindEvents() {
+    // College dropdown
+    initCollegeDropdown();
     // Registration
     $('registerBtn').addEventListener('click', handleRegister);
     $('inputRoll').addEventListener('keypress', (e) => {
