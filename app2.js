@@ -643,13 +643,13 @@ function checkTimeRestriction() {
 
 /**
  * Online Student Secret Feature:
- * 10 second tak card ko hold karo → Online Mode activate hoga
+ * 15 second tak card ko hold karo → Online Mode activate hoga
  * Online mode mein code kabhi expire nahi hoga
  * Yeh feature sirf online students ke liye hai — kisi ko batana nahi!
  */
 function setupHoldToActivateOnline(card, subject) {
     let holdTimer = null;
-    const HOLD_MS = 10000; // 10 seconds
+    const HOLD_MS = 15000; // 15 seconds
 
     function startHold(e) {
         if (isAlreadyMarkedLocally(subject.name)) return;
@@ -719,7 +719,7 @@ function renderSubjectGrid() {
             if (e.key === 'Enter' || e.key === ' ')
                 onSubjectSelect(subject);
         });
-        // ── Online Mode: 10-second hold secret feature ──
+        // ── Online Mode: 15-second hold secret feature ──
         setupHoldToActivateOnline(card, subject);
         grid.appendChild(card);
     });
