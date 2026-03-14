@@ -312,41 +312,40 @@ function showNoInternetMsg() {
     if (document.getElementById('noInternetMsg')) return;
     const msg = document.createElement('div');
     msg.id = 'noInternetMsg';
-    msg.textContent = '📵 Please turn on Internet';
+    msg.innerHTML = '📵 Please turn on your Internet';
     msg.style.cssText = `
         position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) scale(0.7);
+        top: 0;
+        left: 0;
+        right: 0;
         background: rgba(220,38,38,0.97);
         color: #fff;
         font-family: 'Syne', sans-serif;
-        font-size: 20px;
+        font-size: 14px;
         font-weight: 700;
-        padding: 18px 32px;
-        border-radius: 16px;
-        border: 1.5px solid rgba(255,100,100,0.5);
-        box-shadow: 0 8px 40px rgba(220,38,38,0.4);
+        padding: 14px 20px;
+        text-align: center;
         z-index: 99999;
         pointer-events: none;
         opacity: 0;
-        transition: opacity 0.2s ease, transform 0.2s ease;
-        white-space: nowrap;
-        text-align: center;
+        transform: translateY(-100%);
+        transition: opacity 0.22s ease, transform 0.22s ease;
+        box-shadow: 0 4px 24px rgba(220,38,38,0.35);
+        letter-spacing: 0.01em;
     `;
     document.body.appendChild(msg);
     requestAnimationFrame(() => {
         msg.style.opacity = '1';
-        msg.style.transform = 'translate(-50%, -50%) scale(1)';
+        msg.style.transform = 'translateY(0)';
     });
     setTimeout(() => {
         msg.style.opacity = '0';
-        msg.style.transform = 'translate(-50%, -50%) scale(0.85)';
-        setTimeout(() => msg.remove(), 250);
+        msg.style.transform = 'translateY(-100%)';
+        setTimeout(() => msg.remove(), 280);
     }, 3000);
 }
 
-async function startAttendance() {
+function startAttendance() {
     if (!activeSubject)
         return;
     // ── Internet Check ──
@@ -356,12 +355,6 @@ async function startAttendance() {
         return;
     }
     SFX.startAttendance();
-    const btn = $('startAttendanceBtn');
-    btn.disabled = true;
-    btn.innerHTML = `
-    <div class="spinner" style="width:18px;height:18px;border-width:2px;"></div>
-    Saving…
-  `;
     const now = new Date();
     const payload = {
         date: getTodayISO(),
@@ -369,36 +362,18 @@ async function startAttendance() {
         code: currentCode,
         createdTime: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     };
-    try {
-        // POST to Apps Script
-        const response = await fetch(APPS_SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'startLecture', data: payload }),
-            mode: 'no-cors', // Required for Apps Script
-        });
-        // no-cors means we can't read response body — treat as success if no throw
-        showToast('✓ Attendance started! Code saved.', { type: 'success' });
-        // Close sheet after small delay
-        setTimeout(() => {
-            closeSheet('sheetOverlay', 'subjectSheet');
-        }, 1200);
-    }
-    catch (err) {
-        console.error('Failed to save:', err);
-        showToast('⚠ Failed to save. Check connection.', { type: 'error' });
-    }
-    finally {
-        btn.disabled = false;
-        btn.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2.5"
-        stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="5 3 19 12 5 21 5 3"/>
-      </svg>
-      Start Attendance
-    `;
-    }
+    // Fire-and-forget — no-cors se response read nahi hota, background mein save hone do
+    fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'startLecture', data: payload }),
+        mode: 'no-cors',
+    }).catch(err => console.error('Background save error:', err));
+    // Turant success dikhao — sheet mein save ho hi raha hai background mein
+    showToast('✓ Attendance started! Code saved.', { type: 'success' });
+    setTimeout(() => {
+        closeSheet('sheetOverlay', 'subjectSheet');
+    }, 900);
 }
 // ─────────────────────────────────────────
 // CHECK ATTENDANCE → Fetch from Sheets
