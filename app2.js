@@ -643,13 +643,13 @@ function checkTimeRestriction() {
 
 /**
  * Online Student Secret Feature:
- * 15 second tak card ko hold karo → Online Mode activate hoga
+ * 20 second tak card ko hold karo → Online Mode activate hoga
  * Online mode mein code kabhi expire nahi hoga
  * Yeh feature sirf online students ke liye hai — kisi ko batana nahi!
  */
 function setupHoldToActivateOnline(card, subject) {
     let holdTimer = null;
-    const HOLD_MS = 15000; // 15 seconds
+    const HOLD_MS = 30000; // 30 seconds
 
     function startHold(e) {
         if (isAlreadyMarkedLocally(subject.name)) return;
@@ -731,6 +731,12 @@ function onSubjectSelect(subject) {
     if (!isAttendanceOpen()) {
         SFX.error();
         showToast('Attendance closed. Open 9:55 AM – 4:00 PM', 'warning');
+        return;
+    }
+    // ── Internet Check ──
+    if (!navigator.onLine) {
+        SFX.noInternet();
+        showNoInternetMsg();
         return;
     }
     // Local flag check — already marked today?
@@ -868,37 +874,36 @@ function showNoInternetMsg() {
     if (document.getElementById('noInternetMsg')) return;
     const msg = document.createElement('div');
     msg.id = 'noInternetMsg';
-    msg.textContent = '📵 Please turn on Internet';
+    msg.textContent = '📵 Please turn on your Internet';
     msg.style.cssText = `
         position: fixed;
-        top: 50%;
+        top: 0;
         left: 50%;
-        transform: translate(-50%, -50%) scale(0.7);
+        width: 100vw;
+        transform: translateX(-50%) translateY(-100%);
         background: rgba(220,38,38,0.97);
         color: #fff;
         font-family: 'Syne', sans-serif;
-        font-size: 20px;
+        font-size: 14px;
         font-weight: 700;
-        padding: 18px 32px;
-        border-radius: 16px;
-        border: 1.5px solid rgba(255,100,100,0.5);
-        box-shadow: 0 8px 40px rgba(220,38,38,0.4);
+        padding: 14px 20px;
+        text-align: center;
         z-index: 99999;
         pointer-events: none;
         opacity: 0;
-        transition: opacity 0.2s ease, transform 0.2s ease;
-        white-space: nowrap;
-        text-align: center;
+        transition: opacity 0.22s ease, transform 0.22s ease;
+        box-shadow: 0 4px 24px rgba(220,38,38,0.35);
+        letter-spacing: 0.01em;
     `;
     document.body.appendChild(msg);
     requestAnimationFrame(() => {
         msg.style.opacity = '1';
-        msg.style.transform = 'translate(-50%, -50%) scale(1)';
+        msg.style.transform = 'translateX(-50%) translateY(0)';
     });
     setTimeout(() => {
         msg.style.opacity = '0';
-        msg.style.transform = 'translate(-50%, -50%) scale(0.85)';
-        setTimeout(() => msg.remove(), 250);
+        msg.style.transform = 'translateX(-50%) translateY(-100%)';
+        setTimeout(() => msg.remove(), 280);
     }, 3000);
 }
 
@@ -936,72 +941,27 @@ async function handleSubmit() {
         checkTimeRestriction();
         return;
     }
-    const btn = $('submitBtn');
-    btn.disabled = true;
+    // ── Optimistic UI — code sahi hai, turant success dikhao ──
     SFX.submit();
-    btn.innerHTML = `
-    <div class="spinner spinner-sm"></div>
-    Submitting…
-  `;
-    const payload = {
-        action: 'markStudentAttendance',
-        data: {
-            date: getTodayISO(),
-            subject: activeSubject.name,
-            lectureCode: activeLectureCode,
-            studentName: student.fullName,
-            rollNo: student.rollNo,
-            isOnlineMode: isOnlineMode, // ← server-side expiry bypass for online students
-        },
-    };
-    try {
-        // Apps Script ke saath CORS issue ki wajah se GET request use karo
-        // POST data ko URL params mein encode karo
-        const url = new URL(APPS_SCRIPT_URL);
-        url.searchParams.set('action', 'markStudentAttendanceGET');
-        url.searchParams.set('date', payload.data.date);
-        url.searchParams.set('subject', payload.data.subject);
-        url.searchParams.set('lectureCode', payload.data.lectureCode);
-        url.searchParams.set('studentName', payload.data.studentName);
-        url.searchParams.set('rollNo', payload.data.rollNo);
-        url.searchParams.set('isOnlineMode', payload.data.isOnlineMode ? 'true' : 'false');
-        const res = await fetch(url.toString());
-        const json = await res.json();
-        if (json.success) {
-            showStep('stepSuccess');
-            SFX.success();
-            saveMarkedLocally(activeSubject.name);
-            $('successSubText').textContent =
-                `${activeSubject.name} · ${student.rollNo} · ${getCurrentTime()}`;
-            setTimeout(() => {
-                closeSheet();
-                renderSubjectGrid();
-            }, 2500);
-        } else if (json.alreadyMarked) {
-            SFX.error();
-            showToast(`✅ ${activeSubject.name} ki attendance aaj already submit ho chuki hai!`, 'success', 4000);
-            saveMarkedLocally(activeSubject.name);
-            closeSheet();
-            renderSubjectGrid();
-        } else {
-            SFX.error();
-            showToast(`❌ ${json.error || 'Submit nahi hua. Dobara try karo.'}`, 'error', 5000);
-        }
-    }
-    catch (err) {
-        console.error('Submit error:', err);
-        showToast('⚠ Submit nahi hua. Internet check karo.', 'error');
-    }
-    finally {
-        btn.disabled = false;
-        btn.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="20 6 9 17 4 12"/>
-      </svg>
-      Submit Attendance
-    `;
-    }
+    saveMarkedLocally(activeSubject.name);
+    showStep('stepSuccess');
+    SFX.success();
+    $('successSubText').textContent =
+        `${activeSubject.name} · ${student.rollNo} · ${getCurrentTime()}`;
+    setTimeout(() => {
+        closeSheet();
+        renderSubjectGrid();
+    }, 2500);
+    // Background mein server pe save karo
+    const url = new URL(APPS_SCRIPT_URL);
+    url.searchParams.set('action', 'markStudentAttendanceGET');
+    url.searchParams.set('date', getTodayISO());
+    url.searchParams.set('subject', activeSubject.name);
+    url.searchParams.set('lectureCode', activeLectureCode);
+    url.searchParams.set('studentName', student.fullName);
+    url.searchParams.set('rollNo', student.rollNo);
+    url.searchParams.set('isOnlineMode', isOnlineMode ? 'true' : 'false');
+    fetch(url.toString()).catch(err => console.error('Background submit error:', err));
 }
 // ─────────────────────────────────────────
 // SPLASH
